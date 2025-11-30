@@ -124,7 +124,7 @@ public class EnhancedWeaponSway : MonoBehaviour
         if (horizontalSpeed > 0.1f && IsGrounded())
         {
             // Determine if sprinting based on speed (adjust threshold as needed)
-            speedBobMultiplier = horizontalSpeed > 6f ? runBobMultiplier : 1f;
+            speedBobMultiplier = horizontalSpeed > 8f ? runBobMultiplier : 1f;
 
             bobTimer += Time.deltaTime * bobSpeed * speedBobMultiplier;
 
