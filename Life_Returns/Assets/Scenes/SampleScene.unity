@@ -3143,7 +3143,7 @@ MonoBehaviour:
   maxTilt: 20
   enableBob: 1
   bobSpeed: 2
-  bobAmount: 0.001
+  bobAmount: 0.005
   bobSmoothness: 10
   runBobMultiplier: 2
   jumpAmount: 0.3
@@ -6274,6 +6274,12 @@ MonoBehaviour:
   consumeDistance: 0.3
   normalShrinkDuration: 0.5
   quickShrinkDuration: 0.15
+  maxInventoryCapacity: 10
+  maxBattery: 100
+  drainRate: 5
+  consumeSuccessSFX: {fileID: 0}
+  consumeFailSFX: {fileID: 0}
+  batteryEmptySFX: {fileID: 0}
 --- !u!1 &1150199267
 GameObject:
   m_ObjectHideFlags: 0

@@ -294,7 +294,7 @@ public class VacuumSuction : MonoBehaviour
         int objectSize = objectData.size;
 
         // Check if there's enough inventory space
-        if (CurrentInventorySize + objectSize > maxInventoryCapacity)
+        if (CurrentInventorySize + objectSize >= maxInventoryCapacity)
         {
             HandleInventoryFull(obj, rb, objectData, objectSize);
             return;
