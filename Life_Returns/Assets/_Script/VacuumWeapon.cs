@@ -21,7 +21,7 @@ public class VacuumSuction : MonoBehaviour
     [SerializeField] private float quickShrinkDuration = 0.15f;
 
     [Header("Inventory System")]
-    [SerializeField] private int maxInventoryCapacity = 10;
+    [SerializeField] public int maxInventoryCapacity = 10;
 
     [Header("Battery System")]
     [SerializeField] private float maxBattery = 100f;
@@ -294,7 +294,7 @@ public class VacuumSuction : MonoBehaviour
         int objectSize = objectData.size;
 
         // Check if there's enough inventory space
-        if (CurrentInventorySize + objectSize >= maxInventoryCapacity)
+        if (CurrentInventorySize + objectSize > maxInventoryCapacity)
         {
             HandleInventoryFull(obj, rb, objectData, objectSize);
             return;
@@ -456,6 +456,43 @@ public class VacuumSuction : MonoBehaviour
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(nozzle.position, consumeDistance);
         }
+    }
+
+    #endregion
+
+    #region Inventory Access Methods
+
+    /// <summary>
+    /// Returns a copy of the current inventory for external use (like selling UI).
+    /// </summary>
+    public List<SuckableObjectData> GetInventory()
+    {
+        return new List<SuckableObjectData>(inventory);
+    }
+
+    /// <summary>
+    /// Clears the entire inventory (used when selling all items).
+    /// </summary>
+    public void ClearInventory()
+    {
+        inventory.Clear();
+        Debug.Log("Inventory cleared!");
+    }
+
+    /// <summary>
+    /// Gets the count of a specific item type in inventory.
+    /// </summary>
+    public int GetItemCount(SuckableObjectData itemData)
+    {
+        int count = 0;
+        foreach (var item in inventory)
+        {
+            if (item == itemData)
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     #endregion
