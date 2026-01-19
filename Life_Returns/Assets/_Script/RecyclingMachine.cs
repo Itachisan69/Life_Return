@@ -219,6 +219,13 @@ public class RecyclingMachine : MonoBehaviour
             playerController.enabled = false;
         }
 
+        // Freeze camera rotation
+        var cameraController = Camera.main?.GetComponent<MonoBehaviour>();
+        if (cameraController != null)
+        {
+            cameraController.enabled = false;
+        }
+
         if (vacuumSuction != null)
         {
             vacuumSuction.enabled = false;
@@ -231,6 +238,13 @@ public class RecyclingMachine : MonoBehaviour
         if (playerController != null)
         {
             playerController.enabled = true;
+        }
+
+        // Unfreeze camera rotation
+        var cameraController = Camera.main?.GetComponent<MonoBehaviour>();
+        if (cameraController != null)
+        {
+            cameraController.enabled = true;
         }
 
         if (vacuumSuction != null)
