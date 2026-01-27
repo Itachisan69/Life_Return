@@ -19,13 +19,18 @@ public class PlayerMovementAdvanced : MonoBehaviour
     bool readyToJump;
 
     [Header("Jump Feel")]
-    public float fallGravityMultiplier = 2.5f; // Gravity when falling down
-    public float lowJumpGravityMultiplier = 2f; // Gravity when releasing jump early
+    public float fallGravityMultiplier = 2.5f;
+    public float lowJumpGravityMultiplier = 2f;
 
     [Header("Crouching")]
     public float crouchSpeed;
     public float crouchYScale;
     private float startYScale;
+
+    [Header("Audio")]
+    public AudioSource moveAudioSource; // Attach an AudioSource here
+    public AudioClip walkSound;        // Attach your walking clip
+    public AudioClip sprintSound;      // Attach your sprinting clip
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -41,7 +46,6 @@ public class PlayerMovementAdvanced : MonoBehaviour
     public float maxSlopeAngle;
     private RaycastHit slopeHit;
     private bool exitingSlope;
-
 
     public Transform orientation;
 
@@ -69,6 +73,9 @@ public class PlayerMovementAdvanced : MonoBehaviour
         readyToJump = true;
 
         startYScale = transform.localScale.y;
+
+        // Ensure the AudioSource is set to loop
+        if (moveAudioSource != null) moveAudioSource.loop = true;
     }
 
     private void Update()
@@ -79,7 +86,8 @@ public class PlayerMovementAdvanced : MonoBehaviour
         MyInput();
         SpeedControl();
         StateHandler();
-        BetterJump(); // Add better jump feel
+        BetterJump();
+        HandleAudio(); // Call the audio handler every frame
 
         // handle drag
         if (grounded)
@@ -102,9 +110,7 @@ public class PlayerMovementAdvanced : MonoBehaviour
         if (Input.GetKey(jumpKey) && readyToJump && grounded)
         {
             readyToJump = false;
-
             Jump();
-
             Invoke(nameof(ResetJump), jumpCooldown);
         }
 
@@ -124,40 +130,74 @@ public class PlayerMovementAdvanced : MonoBehaviour
 
     private void StateHandler()
     {
-        // Mode - Crouching
         if (Input.GetKey(crouchKey))
         {
             state = MovementState.crouching;
             moveSpeed = crouchSpeed;
         }
-
-        // Mode - Sprinting
         else if (grounded && Input.GetKey(sprintKey))
         {
             state = MovementState.sprinting;
             moveSpeed = sprintSpeed;
         }
-
-        // Mode - Walking
         else if (grounded)
         {
             state = MovementState.walking;
             moveSpeed = walkSpeed;
         }
-
-        // Mode - Air
         else
         {
             state = MovementState.air;
         }
     }
 
+    // Logic to play/stop walking and running sounds
+    private void HandleAudio()
+    {
+        if (moveAudioSource == null) return;
+
+        // Check if the player is actually moving their keys AND is on the ground
+        bool isMoving = (horizontalInput != 0 || verticalInput != 0) && grounded;
+
+        if (isMoving)
+        {
+            AudioClip targetClip = null;
+
+            // Determine which clip should be playing
+            if (state == MovementState.sprinting)
+                targetClip = sprintSound;
+            else if (state == MovementState.walking || state == MovementState.crouching)
+                targetClip = walkSound;
+
+            if (targetClip != null)
+            {
+                // Only change the clip if it's different to prevent "re-starting" the sound every frame
+                if (moveAudioSource.clip != targetClip)
+                {
+                    moveAudioSource.clip = targetClip;
+                    moveAudioSource.Play();
+                }
+                // If it's the right clip but somehow got stopped, play it
+                else if (!moveAudioSource.isPlaying)
+                {
+                    moveAudioSource.Play();
+                }
+            }
+        }
+        else
+        {
+            // If we aren't moving or we are in the air, stop the sound
+            if (moveAudioSource.isPlaying)
+            {
+                moveAudioSource.Stop();
+            }
+        }
+    }
+
     private void MovePlayer()
     {
-        // calculate movement direction
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
-        // on slope
         if (OnSlope() && !exitingSlope)
         {
             rb.AddForce(GetSlopeMoveDirection() * moveSpeed * 20f, ForceMode.Force);
@@ -165,34 +205,25 @@ public class PlayerMovementAdvanced : MonoBehaviour
             if (rb.velocity.y > 0)
                 rb.AddForce(Vector3.down * 80f, ForceMode.Force);
         }
-
-        // on ground
         else if (grounded)
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
-
-        // in air
         else if (!grounded)
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
 
-        // turn gravity off while on slope
         rb.useGravity = !OnSlope();
     }
 
     private void SpeedControl()
     {
-        // limiting speed on slope
         if (OnSlope() && !exitingSlope)
         {
             if (rb.velocity.magnitude > moveSpeed)
                 rb.velocity = rb.velocity.normalized * moveSpeed;
         }
-
-        // limiting speed on ground or in air
         else
         {
             Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
-            // limit velocity if needed
             if (flatVel.magnitude > moveSpeed)
             {
                 Vector3 limitedVel = flatVel.normalized * moveSpeed;
@@ -204,31 +235,24 @@ public class PlayerMovementAdvanced : MonoBehaviour
     private void Jump()
     {
         exitingSlope = true;
-
-        // reset y velocity
         rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-
         rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
     }
 
     private void ResetJump()
     {
         readyToJump = true;
-
         exitingSlope = false;
     }
 
-    // Better jump feel - increases gravity when falling or releasing jump early
     private void BetterJump()
     {
         if (rb.velocity.y < 0)
         {
-            // Falling down - increase gravity for snappier fall
             rb.velocity += Vector3.up * Physics.gravity.y * (fallGravityMultiplier - 1) * Time.deltaTime;
         }
         else if (rb.velocity.y > 0 && !Input.GetKey(jumpKey))
         {
-            // Released jump button while going up - cut jump short
             rb.velocity += Vector3.up * Physics.gravity.y * (lowJumpGravityMultiplier - 1) * Time.deltaTime;
         }
     }
@@ -240,7 +264,6 @@ public class PlayerMovementAdvanced : MonoBehaviour
             float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
             return angle < maxSlopeAngle && angle != 0;
         }
-
         return false;
     }
 
